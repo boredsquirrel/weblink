@@ -1,0 +1,43 @@
+#!/bin/bash
+
+# Detect the use of native or Flatpak Firefox
+# Note: native firefox will be preferred.
+
+if command -v firefox &>/dev/null; then
+    APPNAME="firefox"
+elif flatpak list | grep -q "org.mozilla.firefox"; then
+        APPNAME="flatpak run org.mozilla.firefox"
+fi
+
+# Bash function
+weblink() {
+    URL=$1 #URL ist das Argument
+    MAINPATH="$HOME/.local/share/applications"
+
+    # Search DuckDuckGo for favicon
+    FAVICON_URL="https://icons.duckduckgo.com/ip2/$URL.ico"
+    FAVICON_PATH="$MAINPATH/DESKTOP-LINKS-ICONS/$URL.ico"
+
+    wget -q -O "$FAVICON_PATH" "$FAVICON_URL"
+
+    # Get the Websites Title and remove umlauts
+    TITLE=$(wget -qO- "$URL" | sed -n 's/.*<title[^>]*>\(.*\)<\/title>.*/\1/ip;T;q' | sed 's/\&auml;/ä/g; s/\&ouml;/ö/g; s/\&uuml;/ü/g; s/\&Auml;/Ä/g; s/\&Ouml;/Ö/g; s/\&Uuml;/Ü/g; s/\&szlig;/ß/g')
+
+
+    # Create the desktop entry
+    DESKTOP_ENTRY_PATH="$MAINPATH/DESKTOP-LINKS/$URL.desktop"
+
+    cat > "$DESKTOP_ENTRY_PATH" <<EOfile
+[Desktop Entry]
+Exec=$APPNAME $URL
+Icon=$FAVICON_PATH
+Name=$TITLE
+Type=Application
+EOfile
+
+    echo "Firefox link for $URL ("$TITLE") was created!"
+}
+
+# execute function
+weblink "$1"
+
